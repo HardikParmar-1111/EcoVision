@@ -3,6 +3,8 @@ import { getWeatherData } from '../services/weatherService'
 import { getDetailedAqiData } from '../services/aqiService'
 import { getHistoricalAnalytics } from '../services/historicalService'
 import { notificationService } from '../services/notificationService'
+import { generateHealthAdvisories } from '../utils/healthAdvisoryEngine'
+import { generateAdvisory, generateUniversitySuggestions } from '../utils/weatherAdvisoryEngine'
 
 const EnvironmentalContext = createContext()
 
@@ -35,7 +37,14 @@ export const EnvironmentalProvider = ({ children }) => {
         },
         alerts: [],
         advisories: [],
-        historicalComparison: null
+        tomorrowAdvisories: [],
+        todayWeatherAdvisory: null,
+        tomorrowWeatherAdvisory: null,
+        historicalComparison: null,
+        demoMode: {
+            active: false,
+            condition: null // 'temperature' | 'rain' | 'aqi' | 'wind'
+        }
     })
 
     const generateAdvisories = (weather, aqi) => {
@@ -109,6 +118,21 @@ export const EnvironmentalProvider = ({ children }) => {
         return suggestions;
     };
 
+    const getDemoData = (condition) => {
+        switch (condition) {
+            case 'temperature':
+                return { temp: 42, rainProbability: 10, windSpeed: 15, aqi: 80 };
+            case 'rain':
+                return { temp: 28, rainProbability: 85, windSpeed: 20, aqi: 45 };
+            case 'aqi':
+                return { temp: 32, rainProbability: 5, windSpeed: 10, aqi: 210 };
+            case 'wind':
+                return { temp: 30, rainProbability: 15, windSpeed: 55, aqi: 65 };
+            default:
+                return null;
+        }
+    };
+
     const fetchEnvironmentalData = async () => {
         try {
             // Intelligent Data Fetching: Parallel Service Execution
@@ -120,6 +144,25 @@ export const EnvironmentalProvider = ({ children }) => {
 
             const aqi = aqiDetails.current;
             const advisories = generateAdvisories(weather, aqi);
+
+            // Tomorrow's Health Advisories logic
+            let tomorrowAdvisories = [];
+            const tomorrowWeather = weather.forecast[1];
+            const tomorrowAqiData = aqiDetails.forecast.find(f => f.dayIndex === 1);
+
+            if (data.demoMode.active && data.demoMode.condition) {
+                const demoData = getDemoData(data.demoMode.condition);
+                if (demoData) {
+                    tomorrowAdvisories = generateHealthAdvisories(demoData);
+                }
+            } else if (tomorrowWeather && tomorrowAqiData) {
+                tomorrowAdvisories = generateHealthAdvisories({
+                    temp: tomorrowWeather.maxTemp,
+                    rainProbability: tomorrowWeather.rainProb,
+                    windSpeed: weather.current.windSpeed, // Using current as proxy if forecast wind unavailable
+                    aqi: tomorrowAqiData.maxAqi
+                });
+            }
 
             const alerts = []
             if (aqi.aqi > 100) {
@@ -149,7 +192,8 @@ export const EnvironmentalProvider = ({ children }) => {
                 };
             }) || [];
 
-            setData({
+            setData(prev => ({
+                ...prev,
                 aqi: aqi.aqi,
                 aqiCategory: aqi.category,
                 temp: weather?.current?.temp ?? 0,
@@ -170,6 +214,7 @@ export const EnvironmentalProvider = ({ children }) => {
                 },
                 alerts,
                 advisories,
+                tomorrowAdvisories,
                 historicalComparison: history.status === 'ok' ? history.comparison : null,
                 // Particulate details for AQI page
                 details: {
@@ -177,8 +222,38 @@ export const EnvironmentalProvider = ({ children }) => {
                     pm10: aqi.pm10,
                     o3: aqi.o3,
                     station: aqi.station
-                }
-            })
+                },
+                todayWeatherAdvisory: forecastDays[0] ? {
+                    date: forecastDays[0].date,
+                    advisory: generateAdvisory({
+                        maxTemp: forecastDays[0].maxTemp,
+                        rain: forecastDays[0].rainProb,
+                        wind: weather?.current?.windSpeed ?? null,
+                        aqi: forecastDays[0].aqi
+                    }),
+                    suggestions: generateUniversitySuggestions({
+                        maxTemp: forecastDays[0].maxTemp,
+                        rain: forecastDays[0].rainProb,
+                        wind: weather?.current?.windSpeed ?? null,
+                        aqi: forecastDays[0].aqi
+                    })
+                } : null,
+                tomorrowWeatherAdvisory: forecastDays[1] ? {
+                    date: forecastDays[1].date,
+                    advisory: generateAdvisory({
+                        maxTemp: forecastDays[1].maxTemp,
+                        rain: forecastDays[1].rainProb,
+                        wind: null,
+                        aqi: forecastDays[1].aqi
+                    }),
+                    suggestions: generateUniversitySuggestions({
+                        maxTemp: forecastDays[1].maxTemp,
+                        rain: forecastDays[1].rainProb,
+                        wind: null,
+                        aqi: forecastDays[1].aqi
+                    })
+                } : null
+            }))
 
             // Trigger Background Notifications if thresholds exceeded
             notificationService.checkThresholds({
@@ -215,12 +290,48 @@ export const EnvironmentalProvider = ({ children }) => {
         return await notificationService.requestPermission();
     };
 
+    const setDemoMode = (active, condition = null) => {
+        setData(prev => ({
+            ...prev,
+            demoMode: { active, condition }
+        }));
+    };
+
+    // Re-run health advisory generation when demo mode changes
+    useEffect(() => {
+        if (data.loading) return;
+
+        let tomorrowAdvisories = [];
+        if (data.demoMode.active && data.demoMode.condition) {
+            const demoData = getDemoData(data.demoMode.condition);
+            if (demoData) {
+                tomorrowAdvisories = generateHealthAdvisories(demoData);
+            }
+        } else {
+            // Restore from actual forecast
+            const tomorrowWeather = data.forecastDays[1];
+            const tomorrowAqiData = data.forecastDays[1]; // forecastDays already has aqi mixed in
+
+            if (tomorrowWeather) {
+                tomorrowAdvisories = generateHealthAdvisories({
+                    temp: tomorrowWeather.maxTemp,
+                    rainProbability: tomorrowWeather.rainProb,
+                    windSpeed: data.windSpeed,
+                    aqi: tomorrowWeather.aqi
+                });
+            }
+        }
+
+        setData(prev => ({ ...prev, tomorrowAdvisories }));
+    }, [data.demoMode.active, data.demoMode.condition]);
+
     const value = {
         ...data,
         getAqiColor,
         CAMPUS_LOCATION,
         fetchEnvironmentalData,
-        requestNotificationPermission
+        requestNotificationPermission,
+        setDemoMode
     }
 
     return (

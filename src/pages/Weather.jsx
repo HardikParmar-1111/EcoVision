@@ -8,7 +8,9 @@ const Weather = () => {
         humidity = 0,
         windSpeed = 0,
         condition = 'Offline',
-        CAMPUS_LOCATION = {}
+        CAMPUS_LOCATION = {},
+        todayWeatherAdvisory,
+        tomorrowWeatherAdvisory
     } = useEnvironmentalData()
 
     const weatherMetrics = [
@@ -94,6 +96,89 @@ const Weather = () => {
                         <div style={{ fontSize: '1.1rem', fontWeight: '800', letterSpacing: '0.1em' }}>ECOV_T1_ANAND</div>
                     </div>
                 </div>
+            </div>
+
+            {/* Weather Advisory Sections */}
+            <div style={{ marginTop: '4rem', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                {todayWeatherAdvisory && (todayWeatherAdvisory.advisory.dos.length > 0 || todayWeatherAdvisory.advisory.donts.length > 0 || todayWeatherAdvisory.suggestions.length > 0) && (
+                    <section>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--secondary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <ShieldCheck size={28} color="var(--primary)" /> TODAY&apos;S CAMPUS ADVISORY ({todayWeatherAdvisory.date})
+                        </h2>
+                        <div className="card" style={{ padding: '2.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2.5rem' }}>
+                                {todayWeatherAdvisory.advisory.dos.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>✅ DOs</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {todayWeatherAdvisory.advisory.dos.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {todayWeatherAdvisory.advisory.donts.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--danger)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>❌ DON&apos;Ts</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {todayWeatherAdvisory.advisory.donts.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {todayWeatherAdvisory.suggestions.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--primary)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>🏛 UNIVERSITY SUGGESTIONS</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {todayWeatherAdvisory.suggestions.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {tomorrowWeatherAdvisory && (tomorrowWeatherAdvisory.advisory.dos.length > 0 || tomorrowWeatherAdvisory.advisory.donts.length > 0 || tomorrowWeatherAdvisory.suggestions.length > 0) && (
+                    <section>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--secondary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <Cloud size={28} color="var(--primary)" /> TOMORROW&apos;S CAMPUS ADVISORY ({tomorrowWeatherAdvisory.date})
+                        </h2>
+                        <div className="card" style={{ padding: '2.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2.5rem' }}>
+                                {tomorrowWeatherAdvisory.advisory.dos.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--accent)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>✅ DOs</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {tomorrowWeatherAdvisory.advisory.dos.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {tomorrowWeatherAdvisory.advisory.donts.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--danger)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>❌ DON&apos;Ts</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {tomorrowWeatherAdvisory.advisory.donts.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {tomorrowWeatherAdvisory.suggestions.length > 0 && (
+                                    <div>
+                                        <h4 style={{ color: 'var(--primary)', fontWeight: '800', marginBottom: '1rem', fontSize: '1rem' }}>🏛 UNIVERSITY SUGGESTIONS</h4>
+                                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-main)', lineHeight: '1.8' }}>
+                                            {tomorrowWeatherAdvisory.suggestions.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* Fail-safe message if no advisories exist for both */}
+                {(!todayWeatherAdvisory || (!todayWeatherAdvisory.advisory.dos.length && !todayWeatherAdvisory.advisory.donts.length && !todayWeatherAdvisory.suggestions.length)) &&
+                    (!tomorrowWeatherAdvisory || (!tomorrowWeatherAdvisory.advisory.dos.length && !tomorrowWeatherAdvisory.advisory.donts.length && !tomorrowWeatherAdvisory.suggestions.length)) && (
+                        <div className="card" style={{ textAlign: 'center', padding: '3rem', opacity: 0.6 }}>
+                            <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>No weather advisories for campus safety at this time.</p>
+                        </div>
+                    )}
             </div>
         </motion.div>
     )

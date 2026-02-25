@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
 import { Heart, Activity, User, ShieldPlus, AlertCircle, ShieldCheck } from 'lucide-react'
 import { useEnvironmentalData } from '../context/EnvironmentalContext'
+import HealthAdvisoryCard from '../components/HealthAdvisoryCard'
 
 const Health = () => {
-    const { aqi, aqiCategory } = useEnvironmentalData()
+    const { aqi, aqiCategory, tomorrowAdvisories, setDemoMode, demoMode } = useEnvironmentalData()
 
     const safetyGroups = [
         {
@@ -31,6 +32,83 @@ const Health = () => {
             <header style={{ marginBottom: '3.5rem' }}>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--secondary)', letterSpacing: '-0.02em' }}>Safety Protocols</h1>
                 <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>EcoVision Intelligence: Evidence-based health recommendations</p>
+            </header>
+
+            {/* Demo Toggle Section (Visible only in development or for demo) */}
+            <div className="card" style={{ marginBottom: '2.5rem', padding: '1.5rem', border: '1px dashed var(--primary)', background: 'rgba(14, 165, 233, 0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                        <h3 style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: '800', textTransform: 'uppercase' }}>Demo Control Hub</h3>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Simulate environmental conditions for validation</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {[
+                            { label: 'Normal', value: null },
+                            { label: '🔥 Heat', value: 'temperature' },
+                            { label: '🌧 Rain', value: 'rain' },
+                            { label: '🌫 AQI', value: 'aqi' },
+                            { label: '🌬 Wind', value: 'wind' }
+                        ].map((btn) => (
+                            <button
+                                key={btn.label}
+                                onClick={() => setDemoMode(!!btn.value, btn.value)}
+                                style={{
+                                    padding: '0.5rem 0.8rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    background: (demoMode.condition === btn.value) ? 'var(--primary)' : 'white',
+                                    color: (demoMode.condition === btn.value) ? 'white' : 'var(--text-main)',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {btn.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Tomorrow's Health Advisories Section */}
+            <section style={{ marginBottom: '4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '2rem' }}>
+                    <div style={{ padding: '0.5rem', background: 'var(--secondary)', borderRadius: '8px', color: 'white' }}>
+                        <Heart size={20} />
+                    </div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--secondary)' }}>Tomorrow&apos;s Health Advisories</h2>
+                    {tomorrowAdvisories.length === 0 && (
+                        <span style={{ fontSize: '0.8rem', background: '#f0fdf4', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '12px', fontWeight: '700', marginLeft: 'auto' }}>
+                            All Parameters Nominal
+                        </span>
+                    )}
+                </div>
+
+                {tomorrowAdvisories.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+                        {tomorrowAdvisories.map((advisory, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <HealthAdvisoryCard advisory={advisory} />
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="card" style={{ textAlign: 'center', padding: '3rem', borderStyle: 'dashed' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+                            ✨ No health advisories triggered for tomorrow. The campus environment is within safe operating ranges.
+                        </p>
+                    </div>
+                )}
+            </section>
+
+            <header style={{ marginBottom: '2.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--secondary)' }}>Current Safety Baselines</h2>
             </header>
 
             {/* Main Safety Matrix */}
